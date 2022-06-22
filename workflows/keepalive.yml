@@ -1,8 +1,10 @@
 name: Keepalive
+
 on:
   schedule:
     - cron: '<cron>'
   workflow_dispatch:
+
 jobs:
   keepalive:
     name: Keepalive
