@@ -1,0 +1,13 @@
+name: Keepalive
+on:
+  # Run on a schedule of once per month at 4am UTC / 4pm NZST
+  schedule:
+    - cron: '<cron>'
+  workflow_dispatch:
+jobs:
+  keepalive:
+    name: Keepalive
+    runs-on: ubuntu-latest
+    steps:
+      - name: Keepalive
+        uses: silverstripe/gha-keepalive@v1
