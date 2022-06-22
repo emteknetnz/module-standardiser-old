@@ -24,13 +24,14 @@ foreach (array_values($creator->createCrons('ci')) as $_ghrepos) {
 $ghrepos = array_filter($ghrepos, function($ghrepo) {
     return !in_array($ghrepo, [
         'fallback',
-        'silverstripe/sspak', // already have a demo PR
+        'silverstripe/sspak', // draft PR already created
+        'silverstripe/silverstripe-tagfield', // demo PR already created
         'silverstripe/silverstripe-framework' // doing manually
     ]);
 });
 
 # sboyd tmp
-$ghrepos = ['silverstripe/sspak'];
+$ghrepos = ['silverstripe/silverstripe-tagfield'];
 
 foreach ($ghrepos as $ghrepo) {
     $account = explode('/', $ghrepo)[0];
@@ -71,7 +72,8 @@ foreach ($ghrepos as $ghrepo) {
         file_put_contents("$path/keepalive.yml", $creator->createWorkflow('keepalive', $ghrepo, ''));
     }
     # update readme badges from travis to gha - it's assumed they are always present
-    $readme = file_get_contents("modules/$repo/README.md");
+    $fn = file_exists("modules/$repo/README.md") ? "modules/$repo/README.md" : "modules/$repo/readme.md";
+    $readme = file_get_contents($fn);
     $replace = "[![CI](https://github.com/$account/$repo/actions/workflows/ci.yml/badge.svg)](https://github.com/$account/$repo/actions/workflows/ci.yml)";
     # branch defined
     $find = preg_quote("[![Build Status](https://api.travis-ci.com/$account/$repo.svg?branch=)](https://travis-ci.com/$account/$repo)");
@@ -80,7 +82,7 @@ foreach ($ghrepos as $ghrepo) {
     # branch not defined
     $find = "[![Build Status](https://api.travis-ci.com/$account/$repo.svg)](https://travis-ci.com/$account/$repo)";
     $readme = str_replace($find, $replace, $readme);
-    file_put_contents("modules/$repo/README.md", $readme);
+    file_put_contents($fn, $readme);
     # delete .travis
     if (file_exists("modules/$repo/.travis.yml")) {
         unlink("modules/$repo/.travis.yml");
@@ -108,7 +110,7 @@ foreach ($ghrepos as $ghrepo) {
     $post_body = <<<EOT
     {
         "title": "$title",
-        "body": "Add GitHub Actions workflow files and remove travis",
+        "body": "Issue https://github.com/silverstripe/gha-ci/issues/11",
         "head": "creative-commoners:$new_branch",
         "base": "$current_branch"
     }
