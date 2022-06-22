@@ -22,7 +22,11 @@ foreach (array_values($creator->createCrons('ci')) as $_ghrepos) {
 }
 
 $ghrepos = array_filter($ghrepos, function($ghrepo) {
-    return !in_array($ghrepo, ['fallback']);
+    return !in_array($ghrepo, [
+        'fallback',
+        'silverstripe/sspak', // already have a demo PR
+        'silverstripe/silverstripe-framework' // doing manually
+    ]);
 });
 
 # sboyd tmp
@@ -32,12 +36,30 @@ foreach ($ghrepos as $ghrepo) {
     $account = explode('/', $ghrepo)[0];
     $repo = explode('/', $ghrepo)[1];
     $dir = "modules/$repo";
-    if (!file_exists($dir)) {
-        // note, cannot use --depth=1 here, because ccs repo will be out of sync with silverstripe
-        // so pr's wouldn't work
-        // regardless, will get error ! [remote rejected] (shallow update not allowed)
-        cmd("git clone git@github.com:$ghrepo $dir");
+    if (file_exists($dir)) {
+        "$dir already exists, too risky, existing\n";
+        die;
     }
+    // note, cannot use --depth=1 here, because ccs repo will be out of sync with silverstripe
+    // so pr's wouldn't work
+    // regardless, will get error ! [remote rejected] (shallow update not allowed)
+    cmd("git clone git@github.com:$ghrepo $dir");
+    $current_branch = cmd([
+        "cd $dir",
+        'git rev-parse --abbrev-ref HEAD',
+        "cd - > /dev/null"
+    ]);
+    if (strpos($current_branch, '/') !== false) {
+        echo "On a non-default branch for $ghrepo, not risking doing git things\n";
+        die;
+    }
+    $new_branch = "pulls/$current_branch/module-standards";
+    cmd([
+        "cd $dir",
+        "git checkout -b $new_branch",
+        "cd - > /dev/null"
+    ]);
+    # update workflows
     $path = "$dir/.github/workflows";
     if (!file_exists($path)) {
         mkdir($path, 0775, true);
@@ -48,6 +70,22 @@ foreach ($ghrepos as $ghrepo) {
     if (!file_exists("$path/keepalive.yml")) {
         file_put_contents("$path/keepalive.yml", $creator->createWorkflow('keepalive', $ghrepo, ''));
     }
+    # update readme badges from travis to gha - it's assumed they are always present
+    $readme = file_get_contents("modules/$repo/README.md");
+    $replace = "[![CI](https://github.com/$account/$repo/actions/workflows/ci.yml/badge.svg)](https://github.com/$account/$repo/actions/workflows/ci.yml)";
+    # branch defined
+    $find = preg_quote("[![Build Status](https://api.travis-ci.com/$account/$repo.svg?branch=)](https://travis-ci.com/$account/$repo)");
+    $find = str_replace('\\?branch\\=', '\\?branch\\=.+?', $find);
+    $readme = preg_replace("#$find#", $replace, $readme);
+    # branch not defined
+    $find = "[![Build Status](https://api.travis-ci.com/$account/$repo.svg)](https://travis-ci.com/$account/$repo)";
+    $readme = str_replace($find, $replace, $readme);
+    file_put_contents("modules/$repo/README.md", $readme);
+    # delete .travis
+    if (file_exists("modules/$repo/.travis.yml")) {
+        unlink("modules/$repo/.travis.yml");
+    }
+    # git
     $diff = cmd([
         "cd $dir",
         "git add .",
@@ -58,34 +96,23 @@ foreach ($ghrepos as $ghrepo) {
         echo "No diff for $ghrepo, continuing\n";
         continue;
     }
-    $current_branch = cmd([
-        "cd $dir",
-        'git rev-parse --abbrev-ref HEAD',
-        "cd - > /dev/null"
-    ]);
-    if (strpos($current_branch, '/') !== false) {
-        echo "Already on non-default branch for $ghrepo, not risking doing git things, continuing\n";
-        continue;
-    }
-    $title = 'MNT Adding workflow files';
-    $new_branch = "pulls/$current_branch/module-standards";
+    $title = 'MNT Use GitHub Actions CI';
     cmd([
-        "cd $path",
-        "git checkout -b $new_branch",
+        "cd $dir",
         "git commit -m '$title'",
         "git remote add ccs git@github.com:creative-commoners/$repo",
         "git push ccs $new_branch",
         "cd - > /dev/null"
     ]);
+    // https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
     $post_body = <<<EOT
     {
         "title": "$title",
-        "body": "Adding workflow files",
+        "body": "Add GitHub Actions workflow files and remove travis",
         "head": "creative-commoners:$new_branch",
         "base": "$current_branch"
     }
     EOT;
-    // https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/$account/$repo/pulls");
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
