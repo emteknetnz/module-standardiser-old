@@ -1,6 +1,7 @@
 name: Keepalive
 
 on:
+  # <cron_description>
   schedule:
     - cron: '<cron>'
   workflow_dispatch:

@@ -1,0 +1,5 @@
+{
+    "require": {
+        "lorisleiva/cron-translator": "^0.3.2"
+    }
+}

@@ -4,6 +4,7 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  # <cron_description>
   schedule:
     - cron: '<cron>'
 

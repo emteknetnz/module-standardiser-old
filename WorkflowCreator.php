@@ -1,5 +1,7 @@
 <?php
 
+use Lorisleiva\CronTranslator\CronTranslator;
+
 class WorkflowCreator
 {
     private const MON = 1;
@@ -23,7 +25,9 @@ class WorkflowCreator
         $path = implode('/', array_filter([$actionPath, 'workflows', "$workflow.yml"]));
         $str = file_get_contents($path);
         $cron = $this->getCron($workflow, $ghrepo);
-        return str_replace('<cron>', $cron, $str);
+        $str = str_replace('<cron>', $cron, $str);
+        $str = str_replace('<cron_description>', $this->toHumanCron($cron), $str);
+        return $str;
     }
 
     public function createCrons(string $mode): array
@@ -247,16 +251,30 @@ class WorkflowCreator
         }
     }
 
+    private function toHumanCron(string $cron): string
+    {
+        $str = CronTranslator::translate($cron);
+        if (strpos($str, ' at ') !== false) {
+            $str = "$str UTC";
+        }
+        return $str;
+    }
+
     private function nztToUtc(string $hourStrNZT, int $day): array
     {
         // note this is UTC to NZST, NZDT (daylight savings time) is not considered
         $am = strpos($hourStrNZT, 'am') !== false;
         $hour = preg_replace('/[^0-9]/', '', $hourStrNZT);
         if ($am) {
-            // e.g. NZST 11am SAT = UTC hour 23 SAT
+            // e.g.
+            // NZST 11am SAT = UTC hour 23 SAT
+            // NZST 11pm SAT = UTC hour 11 SUN
+            // NZST 9pm SUN = UTC hour 9 MON
+            // NZST 12am SAT = UTC hour 12 SAT (special case)
             $hour += 12;
             if ($hour == 24) {
-                $hour = 0;
+                // special case for 12am, which should be 0am. end result is it becomes 12pm utc
+                $hour = 12;
             }
         } else {
             // pm

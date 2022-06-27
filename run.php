@@ -1,5 +1,7 @@
 <?php
 
+include 'vendor/autoload.php';
+
 include 'WorkflowCreator.php';
 
 function cmd($cmds)
@@ -87,6 +89,10 @@ foreach ($ghrepos as $ghrepo) {
     if (file_exists("modules/$repo/.travis.yml")) {
         unlink("modules/$repo/.travis.yml");
     }
+
+    // <<< sboyd
+    continue;
+
     # git
     $diff = cmd([
         "cd $dir",
