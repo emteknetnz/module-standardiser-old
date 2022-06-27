@@ -90,9 +90,6 @@ foreach ($ghrepos as $ghrepo) {
         unlink("modules/$repo/.travis.yml");
     }
 
-    // <<< sboyd
-    continue;
-
     # git
     $diff = cmd([
         "cd $dir",
