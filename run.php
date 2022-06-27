@@ -39,6 +39,7 @@ foreach ($ghrepos as $ghrepo) {
     $account = explode('/', $ghrepo)[0];
     $repo = explode('/', $ghrepo)[1];
     $dir = "modules/$repo";
+
     if (file_exists($dir)) {
         "$dir already exists, too risky, existing\n";
         die;
@@ -56,9 +57,30 @@ foreach ($ghrepos as $ghrepo) {
         echo "On a non-default branch for $ghrepo, not risking doing git things\n";
         die;
     }
+    // get the earliest supported minor branch e.g. 4.10, when 4.11 and 4 both exist
+    $branches = cmd([
+        "cd $dir",
+        'git branch -r',
+        "cd - > /dev/null"
+    ]);
+    $bs = explode("\n", $branches);
+    $bs = array_map(function($b) {
+        return preg_replace('#^origin/#', '', trim($b));
+    }, $bs);
+    $bs = array_filter($bs, function($b) {
+        return (string) (float) $b === $b;
+    });
+    $bs = array_map(function($b) {
+        return (float) $b;
+    }, $bs);
+    sort($bs);
+    $bs = array_reverse($bs);
+    $current_branch = $bs[1] ?? $bs[0] ?? $current_branch;
+    // create new branch from the minor branch
     $new_branch = "pulls/$current_branch/module-standards";
     cmd([
         "cd $dir",
+        "git checkout $current_branch",
         "git checkout -b $new_branch",
         "cd - > /dev/null"
     ]);

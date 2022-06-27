@@ -289,7 +289,7 @@ class WorkflowCreator
 
     private function ghrepoToDay(string $ghrepo): string
     {
-        // generate a "predictable yet random" day between 1-28 based on $ghrepo string
+        // generate a "random yet predictable" day between 1-28 based on $ghrepo string
         return (preg_replace('/[^0-9]/', '', md5($ghrepo)) % 28) + 1;
     }
 
