@@ -50,7 +50,7 @@ $exclude_ghrepos = [
 ];
 # $ghrepos = ['silverstripe/silverstripe-tagfield'];
 $min_i = 0;
-$max_i = 5;
+$max_i = 6;
 
 $pr_urls = [];
 
@@ -58,16 +58,17 @@ foreach ($ghrepos as $i => $ghrepo) {
     if ($i < $min_i || $i > $max_i || in_array($ghrepo, $exclude_ghrepos)) {
         continue;
     }
+    # definitions
     $account = explode('/', $ghrepo)[0];
     $repo = explode('/', $ghrepo)[1];
     $dir = "modules/$repo";
     $title = 'MNT Use GitHub Actions CI';
-
+    # see if dir already exists
     if (file_exists($dir)) {
         echo "Directory for $ghrepo already exists, continuing\n";
         continue;
     }
-    // see if PR already exists
+    # see if PR already exists
     $ch = create_ch("https://api.github.com/repos/$account/$repo/pulls");
     $result = curl_exec($ch);
     $resp_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
@@ -87,6 +88,7 @@ foreach ($ghrepos as $i => $ghrepo) {
         echo "Pull-request for $ghrepo already exists, continuing\n";
         continue;
     }
+    # clone repo
     // note, cannot use --depth=1 here, because ccs repo will be out of sync with silverstripe
     // so pr's wouldn't work
     // regardless, will get error ! [remote rejected] (shallow update not allowed)
@@ -100,7 +102,7 @@ foreach ($ghrepos as $i => $ghrepo) {
         echo "On a non-default branch for $ghrepo, not risking doing git things\n";
         die;
     }
-    // get the earliest supported minor branch e.g. 4.10, when 4.11 and 4 both exist
+    # get the earliest supported minor branch e.g. 4.10, when 4.11 and 4 both exist
     $branches = cmd([
         "cd $dir",
         'git branch -r',
@@ -116,7 +118,7 @@ foreach ($ghrepos as $i => $ghrepo) {
     natsort($bs);
     $bs = array_reverse($bs);
     $current_branch = $bs[1] ?? $bs[0] ?? $current_branch;
-    // create new branch from the minor branch
+    # create new branch from the minor branch
     $new_branch = "pulls/$current_branch/module-standards";
     cmd([
         "cd $dir",
@@ -124,10 +126,6 @@ foreach ($ghrepos as $i => $ghrepo) {
         "git checkout -b $new_branch",
         "cd - > /dev/null"
     ]);
-
-    # << sboyd
-    continue;
-
     # update workflows
     $path = "$dir/.github/workflows";
     if (!file_exists($path)) {
@@ -155,7 +153,6 @@ foreach ($ghrepos as $i => $ghrepo) {
     if (file_exists("modules/$repo/.travis.yml")) {
         unlink("modules/$repo/.travis.yml");
     }
-
     # git
     $diff = cmd([
         "cd $dir",
@@ -195,9 +192,8 @@ foreach ($ghrepos as $i => $ghrepo) {
         die;
     }
     if ($result) {
-        $pr_urls = json_decode($result)->url;
+        $pr_urls[] = json_decode($result)->url;
     }
-    // echo $result;
 }
 echo "\rPR urls:\n";
 foreach ($pr_urls as $pr_url) {
