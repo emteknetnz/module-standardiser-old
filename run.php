@@ -4,6 +4,25 @@ include 'vendor/autoload.php';
 
 include 'WorkflowCreator.php';
 
+function create_ch($url, $post_body = '')
+{
+    $github_token = cmd('composer config -g github-oauth.github.com');
+    $github_user = cmd('echo $(git config --list | grep user.name) | sed -e "s/user.name=//"');
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Accept: application/vnd.github.v3+json',
+        "Authorization: token $github_token",
+        "User-Agent: $github_user"
+    ]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+    if ($post_body) {
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $post_body);
+    }
+    return $ch;
+}
+
 function cmd($cmds)
 {
     if (!is_array($cmds)) {
@@ -11,9 +30,6 @@ function cmd($cmds)
     }
     return trim(shell_exec(implode(' && ', $cmds)));
 }
-
-$github_token = cmd('composer config -g github-oauth.github.com');
-$github_user = cmd('echo $(git config --list | grep user.name) | sed -e "s/user.name=//"');
 
 $creator = new WorkflowCreator();
 
@@ -23,26 +39,53 @@ foreach (array_values($creator->createCrons('ci')) as $_ghrepos) {
     $ghrepos = array_merge($ghrepos, $_ghrepos);
 }
 
-$ghrepos = array_filter($ghrepos, function($ghrepo) {
-    return !in_array($ghrepo, [
-        'fallback',
-        'silverstripe/sspak', // draft PR already created
-        'silverstripe/silverstripe-tagfield', // demo PR already created
-        'silverstripe/silverstripe-framework' // doing manually
-    ]);
-});
+$pr_links = [];
 
 # sboyd tmp
-$ghrepos = ['silverstripe/silverstripe-tagfield'];
+$exclude_ghrepos = [
+    'fallback',
+    'silverstripe/sspak', // draft PR already created
+    'silverstripe/silverstripe-tagfield', // demo PR already created
+    // 'silverstripe/silverstripe-framework' // doing manually
+];
+# $ghrepos = ['silverstripe/silverstripe-tagfield'];
+$min_i = 0;
+$max_i = 5;
 
-foreach ($ghrepos as $ghrepo) {
+$pr_urls = [];
+
+foreach ($ghrepos as $i => $ghrepo) {
+    if ($i < $min_i || $i > $max_i || in_array($ghrepo, $exclude_ghrepos)) {
+        continue;
+    }
     $account = explode('/', $ghrepo)[0];
     $repo = explode('/', $ghrepo)[1];
     $dir = "modules/$repo";
+    $title = 'MNT Use GitHub Actions CI';
 
     if (file_exists($dir)) {
-        "$dir already exists, too risky, existing\n";
+        echo "Directory for $ghrepo already exists, continuing\n";
+        continue;
+    }
+    // see if PR already exists
+    $ch = create_ch("https://api.github.com/repos/$account/$repo/pulls");
+    $result = curl_exec($ch);
+    $resp_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+    if (!$result) {
+        echo "Could not fetch pull-requests for $ghrepo, exiting\n";
         die;
+    }
+    $pr_exists = false;
+    foreach (json_decode($result) as $pr) {
+        if ($pr->title == $title) {
+            $pr_exists = true;
+            break;
+        }
+    }
+    if ($pr_exists) {
+        echo "Pull-request for $ghrepo already exists, continuing\n";
+        continue;
     }
     // note, cannot use --depth=1 here, because ccs repo will be out of sync with silverstripe
     // so pr's wouldn't work
@@ -68,12 +111,9 @@ foreach ($ghrepos as $ghrepo) {
         return preg_replace('#^origin/#', '', trim($b));
     }, $bs);
     $bs = array_filter($bs, function($b) {
-        return (string) (float) $b === $b;
+        return preg_match('#^[0-9]+\.[0-9]+$#', $b);
     });
-    $bs = array_map(function($b) {
-        return (float) $b;
-    }, $bs);
-    sort($bs);
+    natsort($bs);
     $bs = array_reverse($bs);
     $current_branch = $bs[1] ?? $bs[0] ?? $current_branch;
     // create new branch from the minor branch
@@ -84,6 +124,10 @@ foreach ($ghrepos as $ghrepo) {
         "git checkout -b $new_branch",
         "cd - > /dev/null"
     ]);
+
+    # << sboyd
+    continue;
+
     # update workflows
     $path = "$dir/.github/workflows";
     if (!file_exists($path)) {
@@ -123,7 +167,6 @@ foreach ($ghrepos as $ghrepo) {
         echo "No diff for $ghrepo, continuing\n";
         continue;
     }
-    $title = 'MNT Use GitHub Actions CI';
     cmd([
         "cd $dir",
         "git commit -m '$title'",
@@ -140,16 +183,7 @@ foreach ($ghrepos as $ghrepo) {
         "base": "$current_branch"
     }
     EOT;
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, "https://api.github.com/repos/$account/$repo/pulls");
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Accept: application/vnd.github.v3+json',
-        "Authorization: token $github_token",
-        "User-Agent: $github_user"
-    ]);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $post_body);
+    $ch = create_ch("https://api.github.com/repos/$account/$repo/pulls", $post_body);
     $result = curl_exec($ch);
     $resp_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     curl_close($ch);
@@ -160,4 +194,12 @@ foreach ($ghrepos as $ghrepo) {
         echo $result;
         die;
     }
+    if ($result) {
+        $pr_urls = json_decode($result)->url;
+    }
+    // echo $result;
+}
+echo "\rPR urls:\n";
+foreach ($pr_urls as $pr_url) {
+    echo "$pr_url\n";
 }
