@@ -150,9 +150,9 @@ foreach ($ghrepos as $i => $ghrepo) {
     $readme = str_replace($find, $replace, $readme);
     file_put_contents($fn, $readme);
     # delete .travis
-    if (file_exists("modules/$repo/.travis.yml")) {
-        unlink("modules/$repo/.travis.yml");
-    }
+    // if (file_exists("modules/$repo/.travis.yml")) {
+    //     unlink("modules/$repo/.travis.yml");
+    // }
     # git
     $diff = cmd([
         "cd $dir",
