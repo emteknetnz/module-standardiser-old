@@ -172,10 +172,14 @@ foreach ($ghrepos as $i => $ghrepo) {
         "cd - > /dev/null"
     ]);
     // https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
+    $body = implode('<br /><br />', [
+        'Issue https://github.com/silverstripe/gha-ci/issues/11',
+        "Workflow run https://github.com/creative-commoners/$repo/actions"
+    ]);
     $post_body = <<<EOT
     {
         "title": "$title",
-        "body": "Issue https://github.com/silverstripe/gha-ci/issues/11",
+        "body": "Issue https://github.com/silverstripe/gha-ci/issues/11, workflow run ",
         "head": "creative-commoners:$new_branch",
         "base": "$current_branch"
     }
