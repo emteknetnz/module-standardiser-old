@@ -179,7 +179,7 @@ foreach ($ghrepos as $i => $ghrepo) {
     $post_body = <<<EOT
     {
         "title": "$title",
-        "body": "Issue https://github.com/silverstripe/gha-ci/issues/11, workflow run ",
+        "body": "$body",
         "head": "creative-commoners:$new_branch",
         "base": "$current_branch"
     }
