@@ -58,7 +58,7 @@ $exclude_ghrepos = [
 ];
 # $ghrepos = ['silverstripe/silverstripe-tagfield'];
 $min_i = 0;
-$max_i = 7;
+$max_i = 8;
 
 $pr_urls = [];
 
