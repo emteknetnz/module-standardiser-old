@@ -57,7 +57,7 @@ $exclude_ghrepos = [
     'silverstripe/sspak',
 ];
 $min_i = 30;
-$max_i = 40;
+$max_i = 30;
 
 $pr_urls = [];
 
