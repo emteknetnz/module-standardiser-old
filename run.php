@@ -44,9 +44,16 @@ $pr_links = [];
 # sboyd tmp
 $exclude_ghrepos = [
     'fallback',
-    'silverstripe/sspak', // draft PR already created
-    'silverstripe/silverstripe-tagfield', // demo PR already created
-    // 'silverstripe/silverstripe-framework' // doing manually
+    // prs already created
+    'silverstripe/recipe-kitchen-sink',
+    'silverstripe/silverstripe-installer',
+    'silverstripe/silverstripe-framework',
+    'silverstripe/silverstripe-reports',
+    'silverstripe/silverstripe-tagfield',
+    'silverstripe/silverstripe-siteconfig',
+    'silverstripe/silverstripe-versioned',
+    'silverstripe/silverstripe-versioned-admin',
+    'silverstripe/sspak',
 ];
 # $ghrepos = ['silverstripe/silverstripe-tagfield'];
 $min_i = 0;
