@@ -10,7 +10,7 @@ class WorkflowCreator
     private const THU = 4;
     private const FRI = 5;
     private const SAT = 6;
-    private const SUN = 7;
+    private const SUN = 0;
     private const DAILY = 99;
 
     private array $ghrepoToCron;
@@ -22,11 +22,13 @@ class WorkflowCreator
 
     public function createWorkflow(string $workflow, string $ghrepo, string $actionPath): string
     {
+        list($account, $repo) = explode('/', $ghrepo);
         $path = implode('/', array_filter([$actionPath, 'workflows', "$workflow.yml"]));
         $str = file_get_contents($path);
         $cron = $this->getCron($workflow, $ghrepo);
         $str = str_replace('<cron>', $cron, $str);
         $str = str_replace('<cron_description>', $this->toHumanCron($cron), $str);
+        $str = str_replace('<account>', $account, $str);
         return $str;
     }
 
@@ -280,8 +282,8 @@ class WorkflowCreator
             // pm
             // e.g. NZST 11pm SAT = UTC hour 11 SUN 
             $day += 1;
-            if ($day == 8) {
-                $day = 1;
+            if ($day == 7) {
+                $day = 0;
             }
         }
         return [$hour, $day];
