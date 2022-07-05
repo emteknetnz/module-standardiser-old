@@ -13,3 +13,13 @@ rm -rf modules # if there there was a previous run
 
 php run.php
 ```
+
+## Token
+
+You'll need a github-oauth.github.com composer token, if this isn't defined you can define it with
+
+```
+composer config --global github-oauth.github.com <token>
+```
+
+You'll need to tick the "Access public repositories" checkbox in https://github.com/settings/tokens/<token>

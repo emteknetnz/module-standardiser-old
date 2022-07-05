@@ -45,6 +45,7 @@ $pr_links = [];
 $exclude_ghrepos = [
     'fallback',
     // prs already created
+    'silverstripe/comment-notifications',
     'silverstripe/recipe-kitchen-sink',
     'silverstripe/silverstripe-installer',
     'silverstripe/silverstripe-framework',
@@ -57,7 +58,7 @@ $exclude_ghrepos = [
 ];
 # $ghrepos = ['silverstripe/silverstripe-tagfield'];
 $min_i = 0;
-$max_i = 6;
+$max_i = 7;
 
 $pr_urls = [];
 
@@ -179,9 +180,10 @@ foreach ($ghrepos as $i => $ghrepo) {
         "cd - > /dev/null"
     ]);
     // https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
+    $url_branch = urlencode($new_branch);
     $body = implode('<br /><br />', [
         'Issue https://github.com/silverstripe/gha-ci/issues/11',
-        "Workflow run https://github.com/creative-commoners/$repo/actions"
+        "Workflow run https://github.com/creative-commoners/$repo/actions?query=branch%3A$url_branch"
     ]);
     $post_body = <<<EOT
     {
