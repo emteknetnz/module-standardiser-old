@@ -56,14 +56,13 @@ $exclude_ghrepos = [
     'silverstripe/silverstripe-versioned-admin',
     'silverstripe/sspak',
 ];
-# $ghrepos = ['silverstripe/silverstripe-tagfield'];
-$min_i = 0;
-$max_i = 8;
+$min_i = 30;
+$max_i = 40;
 
 $pr_urls = [];
 
 foreach ($ghrepos as $i => $ghrepo) {
-    if ($i < $min_i || $i > $max_i || in_array($ghrepo, $exclude_ghrepos)) {
+    if ($i < $min_i || $i >= $max_i || in_array($ghrepo, $exclude_ghrepos)) {
         continue;
     }
     # definitions
@@ -210,5 +209,7 @@ foreach ($ghrepos as $i => $ghrepo) {
 }
 echo "\rPR urls:\n";
 foreach ($pr_urls as $pr_url) {
-    echo "$pr_url\n";
+    $pr_url = str_replace('api.github.com/repos', 'github.com', $pr_url);
+    $pr_url = str_replace('/pulls/', '/pull/', $pr_url);
+    echo "- $pr_url\n";
 }
