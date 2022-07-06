@@ -1,6 +1,7 @@
 <?php
 
 include 'WorkflowCreator.php';
+include 'funcs.php';
 
 $creator = new WorkflowCreator();
 
@@ -8,6 +9,8 @@ $ghrepos = [];
 foreach (array_values($creator->createCrons('ci')) as $_ghrepos) {
     $ghrepos = array_merge($ghrepos, $_ghrepos);
 }
+
+$title = 'MNT Use GitHub Actions CI';
 
 $h = [];
 $h[] = '<style>';
@@ -22,11 +25,25 @@ foreach ($ghrepos as $ghrepo) {
     if (in_array($ghrepo, ['fallback'])) {
         continue;
     }
-    // I don't know the PR branch -- should ping API to get it
-    // Just assume 4.10 for now
+    $pr_branch = 'unknown';
+    $pr_link = "https://github.com/$ghrepo/pulls";
+    echo "Fetching PR data for $ghrepo\n";
+    $ch = create_ch("https://api.github.com/repos/$ghrepo/pulls");
+    $result = curl_exec($ch);
+    $resp_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+    if (!$result) {
+        echo "Could not fetch pull-requests for $ghrepo, exiting\n";
+        die;
+    }
+    foreach (json_decode($result) as $pr) {
+        if ($pr->title == $title) {
+            $pr_link = $pr->html_url;
+            $pr_branch = urlencode($pr->head->ref);
+            break;
+        }
+    }
     $ccs_repo = 'creative-commoners/' . explode('/', $ghrepo)[1];
-    $pr_branch = urlencode('pulls/4.10/module-standards'); // << todo
-    $pr_link = "https://github.com/$ghrepo/pulls"; // < todo
     $src = "https://github.com/$ccs_repo/actions/workflows/ci.yml/badge.svg?branch=$pr_branch";
     $href = "https://github.com/$ccs_repo/actions?query=branch%3A$pr_branch";
     $class = $class == 'even' ? 'odd' : 'even';
