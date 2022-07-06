@@ -49,8 +49,8 @@ foreach ($ghrepos as $ghrepo) {
     $class = $class == 'even' ? 'odd' : 'even';
     $h[] = implode("\n", [
         "<tr class=\"$class\">",
-            "<td><a href=\"$pr_link\">$ghrepo</a></td>",
-            "<td><a href=\"$href\"><img src=\"$src\"></a></td>",
+            "<td><a href=\"$pr_link\" target=\"_blank\">$ghrepo</a></td>",
+            "<td><a href=\"$href\" target=\"_blank\"><img src=\"$src\"></a></td>",
         '</tr>'
     ]);
 }
