@@ -43,6 +43,7 @@ foreach ($ghrepos as $ghrepo) {
             break;
         }
     }
+    $ss_minor_branch = 'unknown';
     $default_branch = 'master';
     echo "Fetching branch data for $ghrepo\n";
     $ch = create_ch("https://api.github.com/repos/$ghrepo/branches");
@@ -53,23 +54,34 @@ foreach ($ghrepos as $ghrepo) {
         echo "Could not fetch pull-requests for $ghrepo, exiting\n";
         die;
     }
-    $branches = [];
+    $minor_branches = [];
+    $default_branches = [];
     foreach (json_decode($result) as $br) {
         $branch = $br->name;
-        if (!preg_match('#^[1-9]$#', $branch)) {
-            continue;
+        if (preg_match('#^[1-9]$#', $branch)) {
+            $default_branches[] = $branch;
         }
-        $branches[] = (int) $branch;
+        if (preg_match('#^[1-9]\.[0-9]+$#', $branch)) {
+            $minor_branches[] = $branch;
+        }
     }
-    if (count($branches)) {
-        $default_branch = (string) max($branches);
+    natsort($minor_branches);
+    $minor_branches = array_reverse($minor_branches);
+    if (count($minor_branches) == 1) {
+        $ss_minor_branch = $minor_branches[0];
+    }
+    if (count($minor_branches) >= 2) {
+        $ss_minor_branch = $minor_branches[1];
+    }
+    if (count($default_branches)) {
+        $default_branch = max($default_branches);
     }
     $ccs_repo = 'creative-commoners/' . explode('/', $ghrepo)[1];
     $ccs_badge_src = "https://github.com/$ccs_repo/actions/workflows/ci.yml/badge.svg?branch=$pr_branch";
     $ccs_actions_href = "https://github.com/$ccs_repo/actions?query=branch%3A$pr_branch";
-    $ss_badge_src = "https://github.com/$ghrepo/actions/workflows/ci.yml/badge.svg?branch=$default_branch";
-    $ss_actions_href = "https://github.com/$ghrepo/actions?query=branch%3A$default_branch";
-    $workflow_href = "https://github.com/$ghrepo/blob/$default_branch/.github/workflows/ci.yml";
+    $ss_badge_src = "https://github.com/$ghrepo/actions/workflows/ci.yml/badge.svg?branch=$ss_minor_branch";
+    $ss_actions_href = "https://github.com/$ghrepo/actions?query=branch%3A$ss_minor_branch";
+    $workflow_href = "https://github.com/$ghrepo/blob/$ss_minor_branch/.github/workflows/ci.yml";
     $travis_href = "https://github.com/$ghrepo/blob/$default_branch/.travis.yml";
     $class = $class == 'even' ? 'odd' : 'even';
     $h[] = implode("\n", [

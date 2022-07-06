@@ -28,6 +28,9 @@ $exclude_ghrepos = [
     'silverstripe/silverstripe-versioned',
     'silverstripe/silverstripe-versioned-admin',
     'silverstripe/sspak',
+    // ci not relevant
+    'silverstripe/recipe-testing', // no code
+    
 ];
 $min_i = 100;
 $max_i = 110;
