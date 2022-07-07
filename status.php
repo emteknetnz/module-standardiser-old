@@ -22,7 +22,12 @@ $h[] = '</style>';
 $h[] = '<table>';
 $class = 'even';
 foreach ($ghrepos as $ghrepo) {
-    if (in_array($ghrepo, ['fallback'])) {
+    if (in_array($ghrepo, [
+        'fallback',
+        'silverstripe-upgrader',
+        'webpack-config',
+        'esling-config'
+    ])) {
         continue;
     }
     $pr_branch = 'unknown';
