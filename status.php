@@ -26,7 +26,8 @@ foreach ($ghrepos as $ghrepo) {
         'fallback',
         'silverstripe-upgrader',
         'webpack-config',
-        'esling-config'
+        'esling-config',
+        'silverstripe-simple'
     ])) {
         continue;
     }
