@@ -154,11 +154,11 @@ foreach ($ghrepos as $i => $ghrepo) {
         "git push ccs $new_branch",
         "cd - > /dev/null"
     ]);
+    $url_new_branch = urlencode($new_branch);
     // https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request
-    $url_branch = urlencode($new_branch);
     $body = implode('<br /><br />', [
         'Issue https://github.com/silverstripe/gha-ci/issues/11',
-        "Workflow run https://github.com/creative-commoners/$repo/actions?query=branch%3A$url_branch"
+        "Workflow run https://github.com/creative-commoners/$repo/actions?query=branch%3A$url_new_branch"
     ]);
     $post_body = <<<EOT
     {
