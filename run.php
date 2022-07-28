@@ -109,7 +109,7 @@ foreach ($ghrepos as $i => $ghrepo) {
         "git checkout -b $new_branch",
         "cd - > /dev/null"
     ]);
-    if (true) {
+    if (false) {
         // create new minors
         $composer = json_decode(file_get_contents("$dir/composer.json"));
         $require = $composer->require;
@@ -128,6 +128,92 @@ foreach ($ghrepos as $i => $ghrepo) {
             $require->{'silverstripe/framework'} = '^5.0';
         }
         file_put_contents("$dir/composer.json", json_encode($composer));
+        // TODO: incomplete script
+    }
+    if (true) {
+        // remove travis, update workflow files
+        $path = "$dir/.github/workflows";
+        if (!file_exists($path)) {
+            echo "$path does not exist when it should\n";
+            die;
+        }
+        if (!file_exists("$path/ci.yml")) {
+            echo "$path/ci.yml does not exist when it should\n";
+            die;
+        }
+        if (!file_exists("$path/keepalive.yml")) {
+            echo "$path/keepalive.yml does not exist when it should\n";
+            die;
+        }
+        # standardise to README.md
+        foreach (['readme.md', 'README.MD', 'README', 'readme'] as $fn) {
+            if (file_exists("$dir/$fn")) {
+                // rename file
+                rename("$dir/$fn", "$dir/README.md");
+            }
+        }
+        if (!file_exists("$dir/README.md")) {
+            echo "$dir/README.md does not exist when it should\n";
+            die;
+        }
+        # nuke badges, then add the following
+        # gha ci badge
+        # supported modules badge
+        # (pending) downloads
+        $s = file_get_contents("$dir/README.md");
+        // [![CI](https://github.com/silverstripe/silverstripe-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/silverstripe/silverstripe-framework/actions/workflows/ci.yml)
+        $s = preg_replace('#^\[!.+\) *$#', '', $s);
+        $badges = implode("\n", [
+            "[![CI](https://github.com/$account/$repo/actions/workflows/ci.yml/badge.svg)](https://github.com/$account/$repo/actions/workflows/ci.yml)",
+            "[![SilverStripe supported module](https://img.shields.io/badge/silverstripe-supported-0071C4.svg)](https://www.silverstripe.org/software/addons/silverstripe-commercially-supported-module-list/)",
+            ''
+        ]);
+        if (substr($s, 0, 1) == '#') {
+            // module has heading e.g. ## Silverstripe Framework
+            $pos = strpos($s, "\n");
+            $s = substr($s, 0, $pos) . "\n" . $badges . substr($s, $pos);
+        } else {
+            $s = $badges . "\n" . $s;
+        }
+        $s = str_replace('SilverStripe', 'Silverstripe', $s);
+        file_put_contents("$dir/README.md", $s);
+        # change syntax in .yml files
+        foreach (['ci.yml', 'keepalive.yml'] as $fn) {
+            $s = file_get_contents("$path/$fn");
+            $s = str_replace(
+                "startsWith(github.repository, 'silverstripe/'))",
+                "github.repository_owner == 'silverstripe'",
+                $s
+            );
+            file_put_contents("$path/$fn", $s);
+        }
+        # delete files
+        foreach (['.travis.yml', '.codecov.yml', '.scrutinzer.yml'] as $fn) {
+            if (file_exists("$dir/$fn")) {
+                unlink("$dir/$fn");
+            }
+        }
+        # phpcs
+        foreach (['phpcs.xml', 'PHPCS.xml', 'PHPCS.xml.dist'] as $fn) {
+            if (file_exists("$dir/$fn")) {
+                rename("$dir/$fn", "$dir/phpcs.xml.dist");
+            }
+        }
+        # phpunit
+        foreach (['phpunit.xml', 'PHPUNIT.xml', 'PHPUNIT.xml.dist'] as $fn) {
+            if (file_exists("$dir/$fn")) {
+                rename("$dir/$fn", "$dir/phpunit.xml.dist");
+            }
+        }
+        if (file_exists("$dir/phpunit.xml/dist")) {
+            $s = file_get_contents("$dir/phpunit.xml.dist");
+            # phpunit.xml.dist - supposed to have 
+            $str = '<' . '?xml version="1.0" encoding="UTF-8"' . '?' . '>';
+            if (strpos($s, $str) === false) {
+                $s = $str . "\n" . $s;
+                file_put_contents("$dir/phpunit.xml.dist", $s);
+            }
+        }
     }
     if (false) {
         # update workflows
