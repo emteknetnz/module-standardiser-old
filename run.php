@@ -21,6 +21,7 @@ $exclude_ghrepos = [
 $min_i = 0;
 $max_i = 10;
 
+$create_pr = false;
 $parent_issue = 'https://github.com/silverstripe/silverstripe-framework/issues/10349';
 $pr_title = 'DEP CMS 5 dependencies';
 $pr_branch = 'pulls/*/major-deps';
@@ -28,7 +29,7 @@ $pr_branch = 'pulls/*/major-deps';
 $pr_urls = [];
 
 $use_earliest_supported_minor = false; // otherwise use default branch
-$create_new_major = true;
+$create_new_major = false;
 
 foreach ($ghrepos as $i => $ghrepo) {
     if ($i < $min_i || $i >= $max_i || in_array($ghrepo, $exclude_ghrepos)) {
@@ -156,15 +157,14 @@ foreach ($ghrepos as $i => $ghrepo) {
             echo "$dir/README.md does not exist when it should\n";
             die;
         }
-        # nuke badges, then add the following
-        # gha ci badge
-        # supported modules badge
-        # (pending) downloads
+        # README.md badges
         $s = file_get_contents("$dir/README.md");
-        // [![CI](https://github.com/silverstripe/silverstripe-framework/actions/workflows/ci.yml/badge.svg)](https://github.com/silverstripe/silverstripe-framework/actions/workflows/ci.yml)
+        // nuke all existing badges
         $s = preg_replace('#^\[!.+\) *$#', '', $s);
         $badges = implode("\n", [
+            // gha ci
             "[![CI](https://github.com/$account/$repo/actions/workflows/ci.yml/badge.svg)](https://github.com/$account/$repo/actions/workflows/ci.yml)",
+            // supported modules list
             "[![SilverStripe supported module](https://img.shields.io/badge/silverstripe-supported-0071C4.svg)](https://www.silverstripe.org/software/addons/silverstripe-commercially-supported-module-list/)",
             ''
         ]);
@@ -205,13 +205,14 @@ foreach ($ghrepos as $i => $ghrepo) {
                 rename("$dir/$fn", "$dir/phpunit.xml.dist");
             }
         }
-        if (file_exists("$dir/phpunit.xml/dist")) {
-            $s = file_get_contents("$dir/phpunit.xml.dist");
-            # phpunit.xml.dist - supposed to have 
-            $str = '<' . '?xml version="1.0" encoding="UTF-8"' . '?' . '>';
-            if (strpos($s, $str) === false) {
-                $s = $str . "\n" . $s;
-                file_put_contents("$dir/phpunit.xml.dist", $s);
+        foreach (['phpunit.xml.dist', 'phpcs.xml.dist'] as $fn) {
+            if (file_exists("$dir/$fn")) {
+                $s = file_get_contents("$dir/$fn");
+                $str = '<' . '?xml version="1.0" encoding="UTF-8"' . '?' . '>';
+                if (strpos($s, '<' . '?xml') === false) {
+                    $s = $str . "\n" . $s;
+                    file_put_contents("$dir/$fn", $s);
+                }
             }
         }
     }
@@ -240,10 +241,9 @@ foreach ($ghrepos as $i => $ghrepo) {
         $readme = str_replace($find, $replace, $readme);
         file_put_contents($fn, $readme);
     }
-    # delete .travis
-    // if (file_exists("modules/$repo/.travis.yml")) {
-    //     unlink("modules/$repo/.travis.yml");
-    // }
+    if (!$create_pr) {
+        continue;
+    }
     # git
     $diff = cmd([
         "cd $dir",
