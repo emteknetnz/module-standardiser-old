@@ -18,17 +18,17 @@ $pr_links = [];
 $exclude_ghrepos = [
     'fallback',
 ];
-$min_i = 0;
-$max_i = 10;
+$min_i = 0; // 0
+$max_i = 40; // 10
 
-$create_pr = false;
-$parent_issue = 'https://github.com/silverstripe/silverstripe-framework/issues/10349';
-$pr_title = 'DEP CMS 5 dependencies';
-$pr_branch = 'pulls/*/major-deps';
+$parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/570';
+$pr_title = 'MNT Standardise modules';
+$pr_branch = 'pulls/*/standardise-modules';
+$create_pr = false; // set to false to dry-run
 
 $pr_urls = [];
 
-$use_earliest_supported_minor = false; // otherwise use default branch
+$use_earliest_supported_minor = true; // otherwise use default branch
 $create_new_major = false;
 
 foreach ($ghrepos as $i => $ghrepo) {
@@ -132,20 +132,7 @@ foreach ($ghrepos as $i => $ghrepo) {
         // TODO: incomplete script
     }
     if (true) {
-        // remove travis, update workflow files
-        $path = "$dir/.github/workflows";
-        if (!file_exists($path)) {
-            echo "$path does not exist when it should\n";
-            die;
-        }
-        if (!file_exists("$path/ci.yml")) {
-            echo "$path/ci.yml does not exist when it should\n";
-            die;
-        }
-        if (!file_exists("$path/keepalive.yml")) {
-            echo "$path/keepalive.yml does not exist when it should\n";
-            die;
-        }
+        $workflow_dir = "$dir/.github/workflows";
         # standardise to README.md
         foreach (['readme.md', 'README.MD', 'README', 'readme'] as $fn) {
             if (file_exists("$dir/$fn")) {
@@ -160,32 +147,49 @@ foreach ($ghrepos as $i => $ghrepo) {
         # README.md badges
         $s = file_get_contents("$dir/README.md");
         // nuke all existing badges
-        $s = preg_replace('#^\[!.+\) *$#', '', $s);
-        $badges = implode("\n", [
-            // gha ci
-            "[![CI](https://github.com/$account/$repo/actions/workflows/ci.yml/badge.svg)](https://github.com/$account/$repo/actions/workflows/ci.yml)",
-            // supported modules list
-            "[![SilverStripe supported module](https://img.shields.io/badge/silverstripe-supported-0071C4.svg)](https://www.silverstripe.org/software/addons/silverstripe-commercially-supported-module-list/)",
-            ''
-        ]);
-        if (substr($s, 0, 1) == '#') {
-            // module has heading e.g. ## Silverstripe Framework
-            $pos = strpos($s, "\n");
-            $s = substr($s, 0, $pos) . "\n" . $badges . substr($s, $pos);
-        } else {
-            $s = $badges . "\n" . $s;
+        $s = preg_replace("/\n *\[\!.+?\n([#a-z0-9])/si", "\n" . '$1', $s);
+        $bdgs = [];
+        // add new badges
+        if (file_exists("$workflow_dir/ci.yml")) {
+            $bdgs[] = "[![CI](https://github.com/$account/$repo/actions/workflows/ci.yml/badge.svg)](https://github.com/$account/$repo/actions/workflows/ci.yml)";
         }
-        $s = str_replace('SilverStripe', 'Silverstripe', $s);
+        if (false) {
+            $bdgs[] = "[![SilverStripe supported module](https://img.shields.io/badge/silverstripe-supported-0071C4.svg)](https://www.silverstripe.org/software/addons/silverstripe-commercially-supported-module-list/)";
+        }
+        if (!empty($bdgs)) {
+            $bdgs[] = '';
+            $badges = implode("\n", $bdgs);
+            if (substr($s, 0, 1) == '#') {
+                // module has heading e.g. ## Silverstripe Framework
+                $pos = strpos($s, "\n");
+                $s = substr($s, 0, $pos) . "\n\n" . $badges . substr($s, $pos);
+            } else {
+                $s = $badges . "\n" . $s;
+            }
+        }
+        // change SilverStripe to Silverstripe, excluding things like namespaces in code examples
+        $s = str_replace('SilverStripe ', 'Silverstripe ', $s);
+        // remove extra newlines
+        $s = str_replace("\n\n\n", "\n\n", $s);
         file_put_contents("$dir/README.md", $s);
         # change syntax in .yml files
         foreach (['ci.yml', 'keepalive.yml'] as $fn) {
-            $s = file_get_contents("$path/$fn");
-            $s = str_replace(
-                "startsWith(github.repository, 'silverstripe/'))",
-                "github.repository_owner == 'silverstripe'",
-                $s
-            );
-            file_put_contents("$path/$fn", $s);
+            if (file_exists("$workflow_dir/$fn")) {
+                $s = file_get_contents("$workflow_dir/$fn");
+                $s = str_replace(
+                    "startsWith(github.repository, 'silverstripe/')",
+                    "github.repository_owner == 'silverstripe'",
+                    $s
+                );
+                file_put_contents("$workflow_dir/$fn", $s);
+            }
+        }
+        # use new update-js action
+        if (file_exists("$workflow_dir/update-js-deps.yml")) {
+            unlink("$workflow_dir/update-js-deps.yml");
+            $contents = file_get_contents('workflows/update-js.yml');
+            $contents = str_replace('<account>', $account, $contents);
+            file_put_contents("$workflow_dir/update-js.yml", $contents);
         }
         # delete files
         foreach (['.travis.yml', '.codecov.yml', '.scrutinzer.yml'] as $fn) {
