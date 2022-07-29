@@ -21,7 +21,6 @@ foreach ($json as $obj) {
 }
 
 $retroactive_update = [
-    'silverstripe/silverstripe-activedirectory',
     'silverstripe/silverstripe-sqlite3',
     'silverstripe/silverstripe-staticpublishqueue',
     'bringyourownideas/silverstripe-maintenance',

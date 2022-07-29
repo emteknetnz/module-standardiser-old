@@ -202,7 +202,6 @@ class WorkflowCreator
             ],
             $this->createCron($mode, '3am', self::SUN) => [
                 // retroactive update modules
-                'silverstripe/silverstripe-activedirectory',
                 'silverstripe/silverstripe-sqlite3',
                 'silverstripe/silverstripe-staticpublishqueue',
             ],
