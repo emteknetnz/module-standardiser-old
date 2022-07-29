@@ -12,24 +12,39 @@ foreach (array_values($creator->createCrons('ci')) as $_ghrepos) {
     $ghrepos = array_merge($ghrepos, $_ghrepos);
 }
 
-$pr_links = [];
+// modules.json comes from
+// https://raw.githubusercontent.com/silverstripe/supported-modules/gh-pages/modules.json
+$supported_modules = [];
+$json = json_decode(file_get_contents('modules.json'));
+foreach ($json as $obj) {
+    $supported_modules[$obj->github] = true;
+}
+
+$retroactive_update = [
+    'silverstripe/silverstripe-activedirectory',
+    'silverstripe/silverstripe-sqlite3',
+    'silverstripe/silverstripe-staticpublishqueue',
+    'bringyourownideas/silverstripe-maintenance',
+    'bringyourownideas/silverstripe-composer-update-checker',
+    'dnadesign/silverstripe-elemental-subsites',
+    'dnadesign/silverstripe-elemental-userforms',
+];
 
 # sboyd tmp
 $exclude_ghrepos = [
     'fallback',
 ];
-$min_i = 0; // 0
-$max_i = 40; // 10
+$min_i = 100; // 0
+$max_i = 110; // 10
 
 $parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/570';
 $pr_title = 'MNT Standardise modules';
 $pr_branch = 'pulls/*/standardise-modules';
 $create_pr = false; // set to false to dry-run
-
-$pr_urls = [];
-
 $use_earliest_supported_minor = true; // otherwise use default branch
 $create_new_major = false;
+
+$pr_urls = [];
 
 foreach ($ghrepos as $i => $ghrepo) {
     if ($i < $min_i || $i >= $max_i || in_array($ghrepo, $exclude_ghrepos)) {
@@ -133,6 +148,24 @@ foreach ($ghrepos as $i => $ghrepo) {
     }
     if (true) {
         $workflow_dir = "$dir/.github/workflows";
+        # retroactive update
+        if (in_array($ghrepo, $retroactive_update)) {
+            if (file_exists("$workflow_dir/main.yml")) {
+                if (preg_match('#ci\.yml#', file_get_contents("$workflow_dir/main.yml"))) {
+                    unlink("$workflow_dir/main.yml");
+                }
+            }
+            if (!file_exists($workflow_dir)) {
+                mkdir($workflow_dir, 0775, true);
+            }
+            if (file_exists("$workflow_dir/ci.yml")) {
+                unlink("$workflow_dir/ci.yml");
+            }
+            file_put_contents("$workflow_dir/ci.yml", $creator->createWorkflow('ci', $ghrepo, ''));
+            if (!file_exists("$workflow_dir/keepalive.yml")) {
+                file_put_contents("$workflow_dir/keepalive.yml", $creator->createWorkflow('keepalive', $ghrepo, ''));
+            }
+        }
         # standardise to README.md
         foreach (['readme.md', 'README.MD', 'README', 'readme'] as $fn) {
             if (file_exists("$dir/$fn")) {
@@ -153,7 +186,7 @@ foreach ($ghrepos as $i => $ghrepo) {
         if (file_exists("$workflow_dir/ci.yml")) {
             $bdgs[] = "[![CI](https://github.com/$account/$repo/actions/workflows/ci.yml/badge.svg)](https://github.com/$account/$repo/actions/workflows/ci.yml)";
         }
-        if (false) {
+        if (array_key_exists($ghrepo, $supported_modules)) {
             $bdgs[] = "[![SilverStripe supported module](https://img.shields.io/badge/silverstripe-supported-0071C4.svg)](https://www.silverstripe.org/software/addons/silverstripe-commercially-supported-module-list/)";
         }
         if (!empty($bdgs)) {

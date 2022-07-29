@@ -200,6 +200,18 @@ class WorkflowCreator
                 'silverstripe/recipe-testing',
                 'silverstripe/silverstripe-behat-extension',
             ],
+            $this->createCron($mode, '3am', self::SUN) => [
+                // retroactive update modules
+                'silverstripe/silverstripe-activedirectory',
+                'silverstripe/silverstripe-sqlite3',
+                'silverstripe/silverstripe-staticpublishqueue',
+            ],
+            $this->createCron($mode, '4am', self::SUN) => [
+                'bringyourownideas/silverstripe-maintenance',
+                'bringyourownideas/silverstripe-composer-update-checker',
+                'dnadesign/silverstripe-elemental-subsites',
+                'dnadesign/silverstripe-elemental-userforms',
+            ],
         ];
     }
 
