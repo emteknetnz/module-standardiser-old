@@ -211,6 +211,9 @@ class WorkflowCreator
                 'dnadesign/silverstripe-elemental-subsites',
                 'dnadesign/silverstripe-elemental-userforms',
             ],
+            $this->createCron($mode, '5am', self::SUN) => [
+                'silverstripe/silverstripe-event-dispatcher',
+            ],
         ];
     }
 

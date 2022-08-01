@@ -4,6 +4,15 @@ include 'vendor/autoload.php';
 include 'WorkflowCreator.php';
 include 'funcs.php';
 
+function print_pr_urls($pr_urls) {
+    echo "\rPR urls:\n";
+    foreach ($pr_urls as $pr_url) {
+        $pr_url = str_replace('api.github.com/repos', 'github.com', $pr_url);
+        $pr_url = str_replace('/pulls/', '/pull/', $pr_url);
+        echo "- $pr_url\n";
+    }
+}
+
 $creator = new WorkflowCreator();
 
 $ghrepos = [];
@@ -27,19 +36,24 @@ $retroactive_update = [
     'bringyourownideas/silverstripe-composer-update-checker',
     'dnadesign/silverstripe-elemental-subsites',
     'dnadesign/silverstripe-elemental-userforms',
+    'silverstripe/silverstripe-event-dispatcher',
 ];
 
 # sboyd tmp
 $exclude_ghrepos = [
     'fallback',
 ];
-$min_i = 100; // 0
+$min_i = 105; // 0
 $max_i = 110; // 10
+
+// 0-40
+// 40-80
+// 80-110 [x]
 
 $parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/570';
 $pr_title = 'MNT Standardise modules';
 $pr_branch = 'pulls/*/standardise-modules';
-$create_pr = false; // set to false to dry-run
+$create_pr = true; // set to false to dry-run
 $use_earliest_supported_minor = true; // otherwise use default branch
 $create_new_major = false;
 
@@ -224,7 +238,7 @@ foreach ($ghrepos as $i => $ghrepo) {
             file_put_contents("$workflow_dir/update-js.yml", $contents);
         }
         # delete files
-        foreach (['.travis.yml', '.codecov.yml', '.scrutinzer.yml'] as $fn) {
+        foreach (['.travis.yml', '.codecov.yml', '.scrutinizer.yml'] as $fn) {
             if (file_exists("$dir/$fn")) {
                 unlink("$dir/$fn");
             }
@@ -320,15 +334,11 @@ foreach ($ghrepos as $i => $ghrepo) {
     } else {
         echo "FAILURE - did not create pull-request for $ghrepo - response code was $resp_code\n";
         echo $result;
+        print_pr_urls($pr_urls);
         die;
     }
     if ($result) {
         $pr_urls[] = json_decode($result)->url;
     }
 }
-echo "\rPR urls:\n";
-foreach ($pr_urls as $pr_url) {
-    $pr_url = str_replace('api.github.com/repos', 'github.com', $pr_url);
-    $pr_url = str_replace('/pulls/', '/pull/', $pr_url);
-    echo "- $pr_url\n";
-}
+print_pr_urls($pr_urls);
