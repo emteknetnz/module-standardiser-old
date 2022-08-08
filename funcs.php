@@ -1,5 +1,14 @@
 <?php
 
+function print_pr_urls($pr_urls) {
+    echo "\rPR urls:\n";
+    foreach ($pr_urls as $pr_url) {
+        $pr_url = str_replace('api.github.com/repos', 'github.com', $pr_url);
+        $pr_url = str_replace('/pulls/', '/pull/', $pr_url);
+        echo "- $pr_url\n";
+    }
+}
+
 function create_ch($url, $post_body = '')
 {
     $github_token = cmd('composer config -g github-oauth.github.com');

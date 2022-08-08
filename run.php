@@ -4,15 +4,6 @@ include 'vendor/autoload.php';
 include 'WorkflowCreator.php';
 include 'funcs.php';
 
-function print_pr_urls($pr_urls) {
-    echo "\rPR urls:\n";
-    foreach ($pr_urls as $pr_url) {
-        $pr_url = str_replace('api.github.com/repos', 'github.com', $pr_url);
-        $pr_url = str_replace('/pulls/', '/pull/', $pr_url);
-        echo "- $pr_url\n";
-    }
-}
-
 $creator = new WorkflowCreator();
 
 $ghrepos = [];
@@ -53,9 +44,9 @@ $max_i = 110; // 10
 $parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/570';
 $pr_title = 'MNT Standardise modules';
 $pr_branch = 'pulls/*/standardise-modules';
-$create_pr = true; // set to false to dry-run
+$create_pr = false; // set to false to dry-run
 $use_earliest_supported_minor = true; // otherwise use default branch
-$create_new_major = false;
+$create_new_major = false; // note - using cms5-scanner instead
 
 $pr_urls = [];
 
@@ -106,10 +97,6 @@ foreach ($ghrepos as $i => $ghrepo) {
         echo "On a non-default branch for $ghrepo, not risking doing git things\n";
         die;
     }
-    if ($create_new_major && !preg_match('#^[1-9][0-9]*$#', $current_branch)) {
-        echo "On a non integer branch for creating new major, nope\n";
-        die;
-    }
     # get the earliest supported minor branch e.g. 4.10, when 4.11 and 4 both exist
     $branches = cmd([
         "cd $dir",
@@ -145,27 +132,6 @@ foreach ($ghrepos as $i => $ghrepo) {
         "git checkout -b $new_branch",
         "cd - > /dev/null"
     ]);
-    if (false) {
-        // create new minors
-        $composer = json_decode(file_get_contents("$dir/composer.json"));
-        $require = $composer->require;
-        foreach ($require as $requirement => $version) {
-            // TODO: symbiote?
-            if (!preg_match('#^(silverstripe)/#', $requirement)) {
-                continue;
-            }
-            preg_match('#^\^[0-9]#', $version, $m);
-            $new_major = $m[1] + 1;
-            $require->{$requirement} = "^$new_major.0";
-        }
-        if (isset($require->{'silverstripe/recipe-cms'})) {
-            $require->{'silverstripe/recipe-cms'} = '^5.0';
-        } else {
-            $require->{'silverstripe/framework'} = '^5.0';
-        }
-        file_put_contents("$dir/composer.json", json_encode($composer));
-        // TODO: incomplete script
-    }
     if (true) {
         $workflow_dir = "$dir/.github/workflows";
         # retroactive update
