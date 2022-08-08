@@ -43,7 +43,7 @@ $retroactive_update = [
 $exclude_ghrepos = [
     'fallback',
 ];
-$min_i = 105; // 0
+$min_i = 0; // 0
 $max_i = 110; // 10
 
 // 0-40
@@ -120,8 +120,11 @@ foreach ($ghrepos as $i => $ghrepo) {
     $bs = array_map(function($b) {
         return preg_replace('#^origin/#', '', trim($b));
     }, $bs);
-    $bs = array_filter($bs, function($b) {
-        return preg_match('#^[0-9]+\.[0-9]+$#', $b);
+    $bs = array_filter($bs, function($b) use ($current_branch) {
+        if (!preg_match('#^([0-9])+\.[0-9]+$#', $b, $m)) {
+            return false;
+        }
+        return $m[1] == $current_branch;
     });
     natsort($bs);
     $bs = array_reverse($bs);
@@ -129,6 +132,10 @@ foreach ($ghrepos as $i => $ghrepo) {
         $current_branch = $bs[1] ?? $bs[0] ?? $current_branch;
     } else {
         // just use the default branch
+    }
+    // tmp - has wrong default branch which I can't change
+    if ($ghrepo == 'bringyourownideas/silverstripe-composer-update-checker') {
+        $current_branch = '3.0';
     }
     # create new branch from the current branch
     $new_branch = str_replace('*', $current_branch, $pr_branch);
