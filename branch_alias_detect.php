@@ -21,6 +21,10 @@ $no_master = [];
 $has_branch_alias = [];
 
 foreach ($ghrepos as $i => $ghrepo) {
+    if ($ghrepo == 'silverstripe/silverstripe-reports') {
+        // have already done a PR for this
+        continue;
+    }
     $a = explode('/', $ghrepo);
     if (count($a) != 2) {
         continue;
@@ -28,6 +32,26 @@ foreach ($ghrepos as $i => $ghrepo) {
     $account = $a[0];
     $repo = $a[1];
     $dir = "modules/$repo";
+    # see if PR already exists
+    $ch = create_ch("https://api.github.com/repos/$account/$repo/pulls");
+    $result = curl_exec($ch);
+    $resp_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+    if (!$result) {
+        echo "Could not fetch pull-requests for $ghrepo, exiting\n";
+        die;
+    }
+    $pr_exists = false;
+    foreach (json_decode($result) as $pr) {
+        if ($pr->title == $pr_title) {
+            $pr_exists = true;
+            break;
+        }
+    }
+    if ($pr_exists) {
+        echo "Pull-request for $ghrepo already exists, continuing\n";
+        continue;
+    }
     # see if dir already exists
     if (file_exists($dir)) {
         echo "Directory for $ghrepo already exists, continuing\n";
@@ -51,6 +75,9 @@ foreach ($ghrepos as $i => $ghrepo) {
             $no_master[] = $ghrepo;
             continue;
         }
+    }
+    if (!file_exists("modules/$repo/composer.json")) {
+        continue;
     }
     $json = json_decode(file_get_contents("modules/$repo/composer.json"));
     if (!isset($json->extra->{'branch-alias'})) {
