@@ -20,14 +20,22 @@ foreach ($json as $obj) {
     $supported_modules[$obj->github] = true;
 }
 
-$retroactive_update = [
-    'silverstripe/silverstripe-sqlite3',
-    'silverstripe/silverstripe-staticpublishqueue',
-    'bringyourownideas/silverstripe-maintenance',
-    'bringyourownideas/silverstripe-composer-update-checker',
-    'dnadesign/silverstripe-elemental-subsites',
-    'dnadesign/silverstripe-elemental-userforms',
-    'silverstripe/silverstripe-event-dispatcher',
+// $retroactive_update = [
+//     'silverstripe/silverstripe-sqlite3',
+//     'silverstripe/silverstripe-staticpublishqueue',
+//     'bringyourownideas/silverstripe-maintenance',
+//     'bringyourownideas/silverstripe-composer-update-checker',
+//     'dnadesign/silverstripe-elemental-subsites',
+//     'dnadesign/silverstripe-elemental-userforms',
+//     'silverstripe/silverstripe-event-dispatcher',
+// ];
+$retroactive_update = [];
+
+$no_cms5 = [
+    'silverstripe/cwp-pdfexport',
+    'silverstripe/silverstripe-akismet',
+    'silverstripe/silverstripe-spellcheck',
+    'silverstripe/security-extensions',
 ];
 
 # sboyd tmp
@@ -35,17 +43,16 @@ $exclude_ghrepos = [
     'fallback',
 ];
 $min_i = 0; // 0
-$max_i = 110; // 10
+$max_i = 3; // 110; // 10
 
-// 0-40
-// 40-80
-// 80-110 [x]
-
-$parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/570';
-$pr_title = 'MNT Standardise modules';
-$pr_branch = 'pulls/*/standardise-modules';
+#$parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/570';
+#$pr_title = 'MNT Standardise modules';
+#$pr_branch = 'pulls/*/standardise-modules';
+$parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/698';
+$pr_title = 'MNT Use gha-dispatch-ci';
+$pr_branch = 'pulls/*/dispatch-ci';
 $create_pr = false; // set to false to dry-run
-$use_earliest_supported_minor = true; // otherwise use default branch
+$use_earliest_supported_minor = false; // otherwise use default branch
 $create_new_major = false; // note - using cms5-scanner instead
 
 $pr_urls = [];
@@ -54,6 +61,10 @@ foreach ($ghrepos as $i => $ghrepo) {
     if ($i < $min_i || $i >= $max_i || in_array($ghrepo, $exclude_ghrepos)) {
         continue;
     }
+    if (in_array($ghrepo, $no_cms5)) {
+        continue;
+    }
+    echo "$ghrepo\n";
     # definitions
     $account = explode('/', $ghrepo)[0];
     $repo = explode('/', $ghrepo)[1];
@@ -245,8 +256,11 @@ foreach ($ghrepos as $i => $ghrepo) {
         if (!file_exists($path)) {
             mkdir($path, 0775, true);
         }
-        if (!file_exists("$path/ci.yml")) {
+        #if (!file_exists("$path/ci.yml")) {
             file_put_contents("$path/ci.yml", $creator->createWorkflow('ci', $ghrepo, ''));
+        #}
+        if (!file_exists("$path/dispatch-ci.yml")) {
+            file_put_contents("$path/dispatch-ci.yml", $creator->createWorkflow('dispatch-ci', $ghrepo, ''));
         }
         if (!file_exists("$path/keepalive.yml")) {
             file_put_contents("$path/keepalive.yml", $creator->createWorkflow('keepalive', $ghrepo, ''));

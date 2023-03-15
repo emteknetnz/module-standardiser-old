@@ -220,11 +220,20 @@ class WorkflowCreator
     private function init(): void
     {
         $this->ghrepoToCron = [
-            'ci' => [],
+            // 'ci' => [],
+            'dispatch-ci' => [],
             'standards' => [],
             'keepalive' => []
         ];
         foreach ($this->createCrons('ci') as $cron => $ghrepos) {
+            #$minute = 0;
+            foreach ($ghrepos as $ghrepo) {
+                #$this->ghrepoToCron['ci'][$ghrepo] = preg_replace('/^[0-9]+ /', "$minute ", $cron);
+                #$minute += 10;
+                //noop
+            }
+        }
+        foreach ($this->createCrons('dispatch-ci') as $cron => $ghrepos) {
             $minute = 0;
             foreach ($ghrepos as $ghrepo) {
                 $this->ghrepoToCron['ci'][$ghrepo] = preg_replace('/^[0-9]+ /', "$minute ", $cron);
@@ -255,10 +264,12 @@ class WorkflowCreator
         if ($mode == 'ci') {
             if ($day > 50) {
                 // daily
-                return sprintf('0 %d * * *', $hour);
+                $hour2 = $hour == 23 ? 0 : $hour + 1;
+                return sprintf('0 %d,%d * * *', $hour, $hour2);
             } else {
                 // normal - once per week on a particular day
-                return sprintf('0 %d * * %d', $hour, $day);
+                $day2 = $day == self::SAT ? self::SUN : $day + 1;
+                return sprintf('0 %d * * %d,$d', $hour, $day, $day2);
             }
         } else {
             // keepalive + standards
