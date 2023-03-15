@@ -38,12 +38,17 @@ $no_cms5 = [
     'silverstripe/security-extensions',
 ];
 
+$skip_modules = [
+    // manually created a PR
+    'silverstripe/silverstripe-sqllite3'
+];
+
 # sboyd tmp
 $exclude_ghrepos = [
     'fallback',
 ];
 $min_i = 0; // 0
-$max_i = 3; // 110; // 10
+$max_i = 5; // 110; // 10
 
 #$parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/570';
 #$pr_title = 'MNT Standardise modules';
@@ -64,7 +69,9 @@ foreach ($ghrepos as $i => $ghrepo) {
     if (in_array($ghrepo, $no_cms5)) {
         continue;
     }
-    echo "$ghrepo\n";
+    if (in_array($ghrepo, $skip_modules)) {
+        continue;
+    }
     # definitions
     $account = explode('/', $ghrepo)[0];
     $repo = explode('/', $ghrepo)[1];
@@ -250,7 +257,7 @@ foreach ($ghrepos as $i => $ghrepo) {
             }
         }
     }
-    if (false) {
+    if (true) {
         # update workflows
         $path = "$dir/.github/workflows";
         if (!file_exists($path)) {

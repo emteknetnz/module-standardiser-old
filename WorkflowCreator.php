@@ -230,13 +230,13 @@ class WorkflowCreator
             foreach ($ghrepos as $ghrepo) {
                 #$this->ghrepoToCron['ci'][$ghrepo] = preg_replace('/^[0-9]+ /', "$minute ", $cron);
                 #$minute += 10;
-                //noop
+                $this->ghrepoToCron['ci'][$ghrepo] = '0 0 1 1 *'; // arbitary cron that's never used
             }
         }
         foreach ($this->createCrons('dispatch-ci') as $cron => $ghrepos) {
             $minute = 0;
             foreach ($ghrepos as $ghrepo) {
-                $this->ghrepoToCron['ci'][$ghrepo] = preg_replace('/^[0-9]+ /', "$minute ", $cron);
+                $this->ghrepoToCron['dispatch-ci'][$ghrepo] = preg_replace('/^[0-9]+ /', "$minute ", $cron);
                 $minute += 10;
             }
         }
@@ -261,7 +261,7 @@ class WorkflowCreator
         // e.g. NZST of '11pm', SAT
         // hour is passed as NZST, though needs to be converted to UTC
         list($hour, $day) = $this->nztToUtc($hourStrNZT, $day);
-        if ($mode == 'ci') {
+        if ($mode == 'dispatch-ci') {
             if ($day > 50) {
                 // daily
                 $hour2 = $hour == 23 ? 0 : $hour + 1;
@@ -269,7 +269,7 @@ class WorkflowCreator
             } else {
                 // normal - once per week on a particular day
                 $day2 = $day == self::SAT ? self::SUN : $day + 1;
-                return sprintf('0 %d * * %d,$d', $hour, $day, $day2);
+                return sprintf('0 %d * * %d,%d', $hour, $day, $day2);
             }
         } else {
             // keepalive + standards
@@ -280,10 +280,12 @@ class WorkflowCreator
 
     private function toHumanCron(string $cron): string
     {
-        $str = CronTranslator::translate($cron);
-        if (strpos($str, ' at ') !== false) {
-            $str = "$str UTC";
-        }
+        #$str = CronTranslator::translate($cron);
+        $str = (new Panlatent\CronExpressionDescriptor\ExpressionDescriptor($cron))->getDescription();
+        // if (strpos($str, ' PM ') !== false) {
+        //     $str = "$str UTC";
+        // }
+        $str = preg_replace('# (AM|PM),#', ' $1 UTC,', $str);
         return $str;
     }
 

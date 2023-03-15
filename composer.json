@@ -1,5 +1,5 @@
 {
     "require": {
-        "lorisleiva/cron-translator": "^0.3.2"
+        "panlatent/cron-expression-descriptor": "*"
     }
 }
