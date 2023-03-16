@@ -8,6 +8,4 @@ on:
 jobs:
   ci:
     name: CI
-    # Only run cron on the <account> account
-    if: (github.event_name == 'schedule' && github.repository_owner == '<account>') || (github.event_name != 'schedule')
     uses: silverstripe/gha-ci/.github/workflows/ci.yml@v1
