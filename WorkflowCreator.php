@@ -280,7 +280,7 @@ class WorkflowCreator
 
     private function toHumanCron(string $cron): string
     {
-        $str = (new Panlatent\CronExpressionDescriptor\ExpressionDescriptor($cron, 'en_NZ'))->getDescription();
+        $str = (new Panlatent\CronExpressionDescriptor\ExpressionDescriptor($cron))->getDescription();
         $str = preg_replace('#0([1-9]):#', '$1:', $str);
         $str = preg_replace('# (AM|PM),#', ' $1 UTC,', $str);
         return $str;

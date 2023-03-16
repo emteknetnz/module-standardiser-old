@@ -266,9 +266,9 @@ foreach ($ghrepos as $i => $ghrepo) {
         #if (!file_exists("$path/ci.yml")) {
             file_put_contents("$path/ci.yml", $creator->createWorkflow('ci', $ghrepo, ''));
         #}
-        if (!file_exists("$path/dispatch-ci.yml")) {
+        //if (!file_exists("$path/dispatch-ci.yml")) {
             file_put_contents("$path/dispatch-ci.yml", $creator->createWorkflow('dispatch-ci', $ghrepo, ''));
-        }
+        //}
         if (!file_exists("$path/keepalive.yml")) {
             file_put_contents("$path/keepalive.yml", $creator->createWorkflow('keepalive', $ghrepo, ''));
         }
