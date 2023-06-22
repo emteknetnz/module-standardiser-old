@@ -23,8 +23,8 @@ foreach ($json as $obj) {
 // get ALL silverstripe account modules for LICENSE update (including not supported)
 $no_licenses = [];
 
-if (true) {
-    for ($i = 0; $i <= 1; $i++) {
+if (false) {
+    for ($i = 1; $i <= 3; $i++) {
         $url = "https://api.github.com/users/silverstripe/repos?per_page=100&page=$i";
         echo "Fetching from $url\n";
         $ch = create_ch($url);
@@ -36,6 +36,12 @@ if (true) {
             die;
         }
         foreach (json_decode($result) as $repo) {
+            if ($repo->archived) {
+                continue;
+            }
+            if ($repo->fork) {
+                continue;
+            }
             $contents_url = $repo->contents_url;
             $contents_url = str_replace('/{+path}', '', $contents_url);
             echo "Fetching from $contents_url\n";
@@ -49,7 +55,8 @@ if (true) {
             }
             $has_license = false;
             foreach (json_decode($result) as $file) {
-                if ($file->name === 'LICENSE' || $file->name === 'LICENSE.md') {
+                $name = strtolower($file->name);
+                if ($name === 'license' || $name === 'license.md') {
                     $has_license = true;
                     break;
                 }
@@ -103,6 +110,17 @@ $pr_branch = 'pulls/*/license';
 $create_pr = false; // set to false to dry-run
 $use_earliest_supported_minor = false; // otherwise use default branch
 $create_new_major = false; // note - using cms5-scanner instead
+
+if (true) {
+    $ghrepos = [];
+    $c = file_get_contents('no-license.txt');
+    $lines = preg_split("#\n#", $c);
+    foreach ($lines as $line) {
+        // [silverstripe/gha-issue] => 1
+        preg_match('#\[(.+?)\]#', $line, $m);
+        $ghrepos[] = $m[1];
+    }
+}
 
 $pr_urls = [];
 
@@ -328,6 +346,11 @@ foreach ($ghrepos as $i => $ghrepo) {
         $find = "[![Build Status](https://api.travis-ci.com/$account/$repo.svg)](https://travis-ci.com/$account/$repo)";
         $readme = str_replace($find, $replace, $readme);
         file_put_contents($fn, $readme);
+    }
+    if (true) {
+        # add LICENSE
+        $license = file_get_contents(__DIR__ . '/LICENSE');
+        file_put_contents("$dir/LICENSE", $license);
     }
     if (!$create_pr) {
         continue;
