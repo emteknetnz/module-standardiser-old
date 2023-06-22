@@ -20,6 +20,50 @@ foreach ($json as $obj) {
     $supported_modules[$obj->github] = true;
 }
 
+// get ALL silverstripe account modules for LICENSE update (including not supported)
+$no_licenses = [];
+
+if (true) {
+    for ($i = 0; $i <= 1; $i++) {
+        $url = "https://api.github.com/users/silverstripe/repos?per_page=100&page=$i";
+        echo "Fetching from $url\n";
+        $ch = create_ch($url);
+        $result = curl_exec($ch);
+        $resp_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+        if (!$result) {
+            echo "Could not fetch from $url, exiting\n";
+            die;
+        }
+        foreach (json_decode($result) as $repo) {
+            $contents_url = $repo->contents_url;
+            $contents_url = str_replace('/{+path}', '', $contents_url);
+            echo "Fetching from $contents_url\n";
+            $ch = create_ch($contents_url);
+            $result = curl_exec($ch);
+            $resp_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            curl_close($ch);
+            if (!$result) {
+                echo "Could not fetch from $contents_url, exiting\n";
+                die;
+            }
+            $has_license = false;
+            foreach (json_decode($result) as $file) {
+                if ($file->name === 'LICENSE' || $file->name === 'LICENSE.md') {
+                    $has_license = true;
+                    break;
+                }
+            }
+            if (!$has_license) {
+                $no_licenses[] = $repo->full_name;
+            }
+        }
+    }
+    // print_r($no_licenses);
+    // die;
+}
+
+
 // $retroactive_update = [
 //     'silverstripe/silverstripe-sqlite3',
 //     'silverstripe/silverstripe-staticpublishqueue',
@@ -53,9 +97,9 @@ $max_i = 5; // 110; // 10
 #$parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/570';
 #$pr_title = 'MNT Standardise modules';
 #$pr_branch = 'pulls/*/standardise-modules';
-$parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/698';
-$pr_title = 'MNT Use gha-dispatch-ci';
-$pr_branch = 'pulls/*/dispatch-ci';
+$parent_issue = 'https://github.com/silverstripe/.github/issues/1';
+$pr_title = 'MNT Update LICENSE';
+$pr_branch = 'pulls/*/license';
 $create_pr = false; // set to false to dry-run
 $use_earliest_supported_minor = false; // otherwise use default branch
 $create_new_major = false; // note - using cms5-scanner instead
@@ -150,7 +194,7 @@ foreach ($ghrepos as $i => $ghrepo) {
         "git checkout -b $new_branch",
         "cd - > /dev/null"
     ]);
-    if (true) {
+    if (false) {
         $workflow_dir = "$dir/.github/workflows";
         # retroactive update
         if (in_array($ghrepo, $retroactive_update)) {
@@ -257,7 +301,7 @@ foreach ($ghrepos as $i => $ghrepo) {
             }
         }
     }
-    if (true) {
+    if (false) {
         # update workflows
         $path = "$dir/.github/workflows";
         if (!file_exists($path)) {
