@@ -55,12 +55,12 @@ if (true) {
                 }
             }
             if (!$has_license) {
-                $no_licenses[] = $repo->full_name;
+                $no_licenses[$repo->full_name] = 1;
             }
         }
     }
-    // print_r($no_licenses);
-    // die;
+    print_r($no_licenses);
+    die;
 }
 
 
