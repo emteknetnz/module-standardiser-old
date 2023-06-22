@@ -349,7 +349,7 @@ foreach ($ghrepos as $i => $ghrepo) {
     }
     if (true) {
         # add LICENSE
-        $license = file_get_contents(__DIR__ . '/LICENSE');
+        $license = file_get_contents(__DIR__ . '/files/LICENSE');
         file_put_contents("$dir/LICENSE", $license);
     }
     if (!$create_pr) {
