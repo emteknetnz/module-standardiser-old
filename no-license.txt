@@ -1,4 +1,3 @@
-    [silverstripe/.github] => 1
     [silverstripe/api.silverstripe.org] => 1
     [silverstripe/demo.silverstripe.org] => 1
     [silverstripe/doc.silverstripe.org] => 1

@@ -22,8 +22,9 @@ foreach ($json as $obj) {
 
 // get ALL silverstripe account modules for LICENSE update (including not supported)
 $no_licenses = [];
+$has_health_files = [];
 
-if (false) {
+if (true) {
     for ($i = 1; $i <= 3; $i++) {
         $url = "https://api.github.com/users/silverstripe/repos?per_page=100&page=$i";
         echo "Fetching from $url\n";
@@ -58,7 +59,17 @@ if (false) {
                 $name = strtolower($file->name);
                 if ($name === 'license' || $name === 'license.md') {
                     $has_license = true;
-                    break;
+                }
+                $s = implode('|', [
+                    'support',
+                    'contributing',
+                    'security',
+                    'code\-of\-conduct',
+                    'code_of_conduct',
+                    'codeofconduct',
+                ]);
+                if (preg_match("#^($s)(\.md|\.txt|)$#", $name)) {
+                    $has_health_files[$repo->full_name] = 1;
                 }
             }
             if (!$has_license) {
@@ -66,7 +77,8 @@ if (false) {
             }
         }
     }
-    print_r($no_licenses);
+    //print_r($no_licenses);
+    print_r($has_health_files);
     die;
 }
 
@@ -99,7 +111,7 @@ $exclude_ghrepos = [
     'fallback',
 ];
 $min_i = 0; // 0
-$max_i = 5; // 110; // 10
+$max_i = 20; // 110; // 10
 
 #$parent_issue = 'https://github.com/silverstripeltd/product-issues/issues/570';
 #$pr_title = 'MNT Standardise modules';
@@ -111,7 +123,7 @@ $create_pr = false; // set to false to dry-run
 $use_earliest_supported_minor = false; // otherwise use default branch
 $create_new_major = false; // note - using cms5-scanner instead
 
-if (true) {
+if (false) {
     $ghrepos = [];
     $c = file_get_contents('no-license.txt');
     $lines = preg_split("#\n#", $c);
@@ -386,6 +398,10 @@ foreach ($ghrepos as $i => $ghrepo) {
         "base": "$current_branch"
     }
     EOT;
+
+    // WASN'T creating PRs for some reason for LICENSE stuff. No idea why not
+    if (true) continue;
+
     $ch = create_ch("https://api.github.com/repos/$account/$repo/pulls", $post_body);
     $result = curl_exec($ch);
     $resp_code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
